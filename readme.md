@@ -1,181 +1,237 @@
+
 # 🚀 API Backend Seguro - Node.js + Express + MySQL (2026)
 
-![Status](https://github.com/)
-![Node.js](https://nodejs.org/)
-![License](LICENSE)
+API backend **enterprise-grade** focada em autenticação, segurança e rastreabilidade de usuários.
+
+---
 
 ## ✨ Visão Geral
 
-API **Enterprise Grade** para autenticação de usuários com **segurança avançada**:
-
-- **9 endpoints** completos (login, register, recovery, perfil, histórico)
-- **Token HMAC-SHA512 + SHA256** (768 bits)
-- **Senhas bcrypt** com validação forte obrigatória
-- **Rate limiting** customizado (5 tentativas / 15 min)
-- **5 emails automáticos** via Mailtrap
-- **Swagger** documentado
-- **MySQL** com estrutura otimizada (12 colunas)
+- Autenticação segura com **tokens HMAC-SHA512 + SHA256**
+- **Senhas fortes obrigatórias** (bcrypt salt 12)
+- **Rate limit por IP** (5 tentativas / 15 min)
+- Recuperação de senha com **token temporário**
+- Histórico de login e IP
+- Emails automáticos (Mailtrap)
+- Arquitetura organizada e pronta para produção
 
 ---
 
 ## 🔌 Tech Stack
 
+- Node.js + Express
+- MySQL 8.x
+- bcrypt
+- crypto / crypto-js
+- nodemailer (Mailtrap)
+- dotenv
+- Swagger (opcional)
+
+---
+
+## 🚀 Primeiros Passos
+
 ```bash
-├── Node.js + Express (v4.x)
-├── MySQL 8.x
-├── bcrypt (salt 12)
-├── crypto-js (HMAC-SHA512 / SHA256)
-├── nodemailer + Mailtrap
-├── Swagger UI
-├── Rate limiting custom
-└── dotenv (.env)
-```
-🚀 Primeiros Passos
-1. Clone e instale
-git clone <seu-repo>
+git clone git@github.com:wellarj/api_backend.git
 cd api_backend
 npm install
+```
 
-2. Configurar .env
-# Banco MySQL
+### Configurar ambiente
+
+Crie um `.env` baseado no `.env.example`.
+
+```env
+PORT=3001
 DB_HOST=localhost
 DB_USER=root
-DB_PASS=sua_senha
+DB_PASS=senha
 DB_NAME=minha_api
 
-# Email (Mailtrap)
-SMTP_USER=a3663e2263b71ade25a40452c29997a1
-SMTP_PASS=seu_mailtrap_password
-
-# Tokens
-TOKEN_SECRET=Ch4ng3Th1sT0Y0ur64Ch4rsS3cr3tK3yF0rPr0duct10n2026N0w
-JWT_NOME_APLICACAO=MinhaApiSecure2026
-
-PORT=3001
+TOKEN_SECRET=CHAVE_SUPER_SECRETA_64_CHARS
+JWT_NOME_APLICACAO=API_BACKEND_2026
 NODE_ENV=production
+```
 
-3. Migrar banco de dados
-CREATE TABLE users (
-    uid VARCHAR(255) PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('user','admin') DEFAULT 'user',
-    last_ip VARCHAR(45),
-    last_login DATETIME,
-    login_attempts INT DEFAULT 0,
-    last_failed_login DATETIME,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    recovery_token VARCHAR(64),
-    recovery_expires DATETIME
-);
+---
 
-4. Rodar a API
-npm run dev   # desenvolvimento (nodemon)
-npm start     # produção
+## 🟢 Health Check
 
+| Método | Rota | Descrição |
+|------|------|----------|
+| GET | `/api/public/ping` | Verifica se a API está online |
 
-✅ API: http://localhost:3001
+---
 
-📚 Swagger: http://localhost:3001/api-docs
+## 🔓 Rotas Públicas (`/api/public`)
 
-🔐 Dados de Teste
-UID: user_1770062281148_ko4bcj8f3
-TOKEN: 3bff7f52401dff70003eefad8dd25040cfe0325d9bbede3eb8e6b20a671dde9d
-EMAIL: leonel16basilio@gmail.com
-SENHA: SuperApp2026!123
+### 🔑 Login
+| Método | Rota |
+|------|------|
+| POST | `/login` |
 
-📋 Endpoints
-🔓 Públicos (/api/public/)
-Endpoint    Método  Rate Limit  Descrição
-/ping   GET -   Health check
-/login  POST    5/15min Login + token
-/register   POST    5/15min Registro
-/recovery   POST    5/15min Recuperação de senha
-/reset-password/:token  POST    -   Reset (1h)
-🔒 Protegidos (/api/user/)
-Endpoint    Método  Auth    Descrição
-/me GET X-UID + X-TOKEN Perfil
-/login-history  GET X-UID + X-TOKEN Histórico
-/profile    PUT X-UID + X-TOKEN Atualizar email
-/change-password    POST    X-UID + X-TOKEN Trocar senha
-🧪 Testes Rápidos
-# Health
-curl http://localhost:3001/api/public/ping
+**Body**
+```json
+{
+  "email": "user@email.com",
+  "password": "SenhaForte@2026"
+}
+```
 
-# Login
-curl -X POST http://localhost:3001/api/public/login \
--H "Content-Type: application/json" \
--d '{"email":"leonel16basilio@gmail.com","password":"SuperApp2026!123"}'
+Rate limit: **5 tentativas / 15 min**
 
-# Perfil
-curl -H "X-UID: user_1770062281148_ko4bcj8f3" \
--H "X-TOKEN: SEU_TOKEN" \
-http://localhost:3001/api/user/me
+---
 
-🔒 Segurança Implementada
-Proteção    Detalhe
-Token   HMAC-SHA512 + SHA256 (768 bits)
-Senhas  bcrypt salt 12
-Rate Limit  5 tentativas / 15 min
-SQL Injection   Queries preparadas
-Recovery    Token único (1h)
-IP Tracking last_ip
-📧 Emails Automáticos
+### ➕ Registro
+| Método | Rota |
+|------|------|
+| POST | `/register` |
 
-👤 Novo login
+Senha obrigatoriamente forte:
+- 12+ caracteres
+- Maiúscula, minúscula, número e símbolo
 
-🎉 Registro
+---
 
-🔓 Recuperação
+### 📧 Recuperação de senha
+| Método | Rota |
+|------|------|
+| POST | `/recovery` |
 
-✅ Atualização de perfil
+Envia email com token válido por **1 hora**.
 
-🔐 Troca de senha
+---
 
-🏗️ Estrutura
+### 🔄 Reset de senha
+| Método | Rota |
+|------|------|
+| POST | `/reset-password/:token` |
+
+Senha forte obrigatória.
+
+---
+
+## 🔒 Rotas Protegidas (`/api/user`)
+
+🔐 **Autenticação obrigatória via middleware**  
+Headers esperados:
+```
+X-UID
+X-TOKEN
+```
+
+---
+
+### 👤 Perfil do usuário
+| Método | Rota |
+|------|------|
+| GET | `/me` |
+
+Retorna:
+- uid
+- email
+- role
+- último login
+- IP
+- tentativas de login
+
+---
+
+### ✏️ Atualizar perfil
+| Método | Rota |
+|------|------|
+| PUT | `/profile` |
+
+Permite alterar o email do usuário.
+
+---
+
+### 🔐 Alterar senha
+| Método | Rota |
+|------|------|
+| POST | `/change-password` |
+
+Requer:
+- senha atual
+- nova senha forte
+
+---
+
+### 📋 Histórico de login
+| Método | Rota |
+|------|------|
+| GET | `/login-history` |
+
+Mostra:
+- último IP
+- último login
+- tentativas
+- última falha
+
+---
+
+## 🔒 Segurança Implementada
+
+| Item | Implementação |
+|----|--------------|
+| Hash senha | bcrypt (salt 12) |
+| Token | HMAC-SHA512 + SHA256 |
+| Rate limit | IP + ação |
+| SQL Injection | Queries preparadas |
+| Reset senha | Token temporário (1h) |
+| Auditoria | IP e login armazenados |
+
+---
+
+## 📧 Emails Automáticos
+
+- Boas-vindas
+- Login recente
+- Recuperação de senha
+- Alteração de email
+- Troca de senha
+
+---
+
+## 🏗️ Estrutura do Projeto
+
+```bash
 api_backend/
 ├── src/
 │   ├── routes/
 │   │   ├── public.js
 │   │   └── user.js
+│   ├── middleware/
+│   │   └── authMiddleware.js
 │   ├── utils/
 │   │   ├── tokenUtils.js
 │   │   └── emailService.js
-│   ├── middleware/
-│   │   └── authMiddleware.js
 │   └── config/
 │       └── database.js
 ├── server.js
 ├── package.json
-└── .env.example
+├── .env.example
+└── README.md
+```
 
-📈 Status
-Feature Status
-9 endpoints ✅
-Token 768 bits  ✅
-Senhas fortes   ✅
-Rate limit  ✅
-Emails  ✅
-MySQL   ✅
-Swagger ✅
-Produção    ✅
-🔗 Links
+---
 
-Swagger: http://localhost:3001/api-docs
+## 📈 Status
 
-Health: http://localhost:3001/api/public/ping
+✔ Produção pronta  
+✔ Segurança aplicada  
+✔ API funcional  
+✔ SSH Git configurado  
 
-Mailtrap: https://mailtrap.io
+---
 
-📝 Próximos Passos
+## 📝 Próximos Passos
 
-⏳ Testes automatizados (Jest)
+- Testes automatizados (Jest)
+- Docker / Docker Compose
+- CI/CD
+- Integração frontend
 
-⏳ Docker / Docker Compose
+---
 
-⏳ CI/CD
-
-⏳ Integração frontend
-
-<div align="center"> <strong>Feito em Sorocaba-SP, Brasil (2026)</strong> </div> ```
+**Feito no Brasil – 2026**

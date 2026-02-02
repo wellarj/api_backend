@@ -1,189 +1,201 @@
-# 🚀 API Backend Seguro — Node.js + Express + MySQL (2026)
 
-API backend **Enterprise Grade** focada em autenticação segura, controle de acesso e boas práticas de segurança para aplicações modernas.
+# 🚀 API Backend Seguro - Node.js + Express + MySQL (2026)
 
----
-
-## 📌 Visão Geral
-
-Esta API fornece um sistema completo de autenticação e gerenciamento de usuários, com foco em **segurança**, **performance** e **organização de código**.
-
-### Principais destaques
-
-- ✅ 9 endpoints REST completos
-- 🔐 Token criptográfico **HMAC-SHA512 + SHA256 (768 bits)**
-- 🔑 Senhas protegidas com **bcrypt (salt 12)**
-- 🚫 Rate limit customizado (5 tentativas / 15 minutos)
-- 📧 5 tipos de emails automáticos (Mailtrap)
-- 📚 Documentação Swagger
-- 🗄️ MySQL otimizado
-- 🌱 Variáveis de ambiente via `.env`
+API backend **enterprise-grade** focada em autenticação, segurança e rastreabilidade de usuários.
 
 ---
 
-## 🔧 Stack Tecnológica
+## ✨ Visão Geral
 
-```
-Node.js + Express
-MySQL 8.x
-bcrypt
-crypto-js
-nodemailer
-Mailtrap
-Swagger UI
-dotenv
-```
+- Autenticação segura com **tokens HMAC-SHA512 + SHA256**
+- **Senhas fortes obrigatórias** (bcrypt salt 12)
+- **Rate limit por IP** (5 tentativas / 15 min)
+- Recuperação de senha com **token temporário**
+- Histórico de login e IP
+- Emails automáticos (Mailtrap)
+- Arquitetura organizada e pronta para produção
+
+---
+
+## 🔌 Tech Stack
+
+- Node.js + Express
+- MySQL 8.x
+- bcrypt
+- crypto / crypto-js
+- nodemailer (Mailtrap)
+- dotenv
+- Swagger (opcional)
 
 ---
 
 ## 🚀 Primeiros Passos
 
-### 1️⃣ Clonar o repositório
-
 ```bash
-git clone <URL_DO_REPOSITORIO>
+git clone git@github.com:wellarj/api_backend.git
 cd api_backend
 npm install
 ```
 
----
+### Configurar ambiente
 
-### 2️⃣ Configurar variáveis de ambiente
-
-Crie um arquivo `.env` baseado no `.env.example`:
+Crie um `.env` baseado no `.env.example`.
 
 ```env
 PORT=3001
-
 DB_HOST=localhost
 DB_USER=root
-DB_PASS=
+DB_PASS=senha
 DB_NAME=minha_api
 
+TOKEN_SECRET=CHAVE_SUPER_SECRETA_64_CHARS
 JWT_NOME_APLICACAO=API_BACKEND_2026
-NODE_ENV=development
-TOKEN_SECRET=SUA_CHAVE_SECRETA_FORTE_AQUI
-
-# Mailtrap
-SMTP_HOST=sandbox.smtp.mailtrap.io
-SMTP_PORT=2525
-SMTP_USER=SEU_USER_MAILTRAP
-SMTP_PASS=SEU_PASS_MAILTRAP
-
-FRONTEND_URL=http://localhost:3000
-```
-
-⚠️ **Nunca suba o `.env` para o GitHub**
-
----
-
-### 3️⃣ Criar estrutura do banco de dados
-
-```sql
-CREATE TABLE users (
-    uid VARCHAR(255) PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('user','admin') DEFAULT 'user',
-    last_ip VARCHAR(45),
-    last_login DATETIME,
-    login_attempts INT DEFAULT 0,
-    last_failed_login DATETIME,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    recovery_token VARCHAR(64),
-    recovery_expires DATETIME
-);
+NODE_ENV=production
 ```
 
 ---
 
-### 4️⃣ Rodar a aplicação
+## 🟢 Health Check
 
-```bash
-npm run dev     # Desenvolvimento (nodemon)
-npm start       # Produção
+| Método | Rota | Descrição |
+|------|------|----------|
+| GET | `/api/public/ping` | Verifica se a API está online |
+
+---
+
+## 🔓 Rotas Públicas (`/api/public`)
+
+### 🔑 Login
+| Método | Rota |
+|------|------|
+| POST | `/login` |
+
+**Body**
+```json
+{
+  "email": "user@email.com",
+  "password": "SenhaForte@2026"
+}
+```
+
+Rate limit: **5 tentativas / 15 min**
+
+---
+
+### ➕ Registro
+| Método | Rota |
+|------|------|
+| POST | `/register` |
+
+Senha obrigatoriamente forte:
+- 12+ caracteres
+- Maiúscula, minúscula, número e símbolo
+
+---
+
+### 📧 Recuperação de senha
+| Método | Rota |
+|------|------|
+| POST | `/recovery` |
+
+Envia email com token válido por **1 hora**.
+
+---
+
+### 🔄 Reset de senha
+| Método | Rota |
+|------|------|
+| POST | `/reset-password/:token` |
+
+Senha forte obrigatória.
+
+---
+
+## 🔒 Rotas Protegidas (`/api/user`)
+
+🔐 **Autenticação obrigatória via middleware**  
+Headers esperados:
+```
+X-UID
+X-TOKEN
 ```
 
 ---
 
-## 🌐 URLs
+### 👤 Perfil do usuário
+| Método | Rota |
+|------|------|
+| GET | `/me` |
 
-- API: `http://localhost:3001`
-- Swagger: `http://localhost:3001/api-docs`
-- Health check: `http://localhost:3001/api/public/ping`
-
----
-
-## 🔐 Endpoints
-
-### Públicos (`/api/public`)
-
-| Endpoint | Método | Rate Limit | Descrição |
-|--------|--------|------------|-----------|
-| /ping | GET | - | Health check |
-| /login | POST | 5/15min | Login |
-| /register | POST | 5/15min | Registro |
-| /recovery | POST | 5/15min | Recuperação |
-| /reset-password/:token | POST | - | Reset de senha |
+Retorna:
+- uid
+- email
+- role
+- último login
+- IP
+- tentativas de login
 
 ---
 
-### Protegidos (`/api/user`)
+### ✏️ Atualizar perfil
+| Método | Rota |
+|------|------|
+| PUT | `/profile` |
 
-| Endpoint | Método | Auth | Descrição |
-|--------|--------|------|-----------|
-| /me | GET | X-UID + X-TOKEN | Perfil |
-| /login-history | GET | X-UID + X-TOKEN | Histórico |
-| /profile | PUT | X-UID + X-TOKEN | Atualizar email |
-| /change-password | POST | X-UID + X-TOKEN | Trocar senha |
+Permite alterar o email do usuário.
 
 ---
 
-## 🧪 Testes Rápidos
+### 🔐 Alterar senha
+| Método | Rota |
+|------|------|
+| POST | `/change-password` |
 
-### Health
+Requer:
+- senha atual
+- nova senha forte
 
-```bash
-curl http://localhost:3001/api/public/ping
-```
+---
 
-### Login
+### 📋 Histórico de login
+| Método | Rota |
+|------|------|
+| GET | `/login-history` |
 
-```bash
-curl -X POST http://localhost:3001/api/public/login \
--H "Content-Type: application/json" \
--d '{"email":"email@teste.com","password":"SenhaForte123!"}'
-```
+Mostra:
+- último IP
+- último login
+- tentativas
+- última falha
 
 ---
 
 ## 🔒 Segurança Implementada
 
-| Camada | Implementação |
-|------|---------------|
+| Item | Implementação |
+|----|--------------|
+| Hash senha | bcrypt (salt 12) |
 | Token | HMAC-SHA512 + SHA256 |
-| Senhas | bcrypt (salt 12) |
-| Rate limit | 5 tentativas / 15 min |
+| Rate limit | IP + ação |
 | SQL Injection | Queries preparadas |
-| Recovery | Token temporário (1h) |
-| Auditoria | IP e histórico de login |
+| Reset senha | Token temporário (1h) |
+| Auditoria | IP e login armazenados |
 
 ---
 
 ## 📧 Emails Automáticos
 
-- 👤 Novo login
-- 🎉 Registro
-- 🔓 Recuperação de senha
-- ✅ Atualização de perfil
-- 🔐 Troca de senha
+- Boas-vindas
+- Login recente
+- Recuperação de senha
+- Alteração de email
+- Troca de senha
 
 ---
 
 ## 🏗️ Estrutura do Projeto
 
-```
+```bash
 api_backend/
 ├── src/
 │   ├── routes/
@@ -204,27 +216,22 @@ api_backend/
 
 ---
 
-## 📈 Status do Projeto
+## 📈 Status
 
-| Feature | Status |
-|------|--------|
-| Endpoints | ✅ |
-| Tokens seguros | ✅ |
-| Senhas fortes | ✅ |
-| Rate limit | ✅ |
-| Emails | ✅ |
-| Swagger | ✅ |
-| Produção | ✅ |
+✔ Produção pronta  
+✔ Segurança aplicada  
+✔ API funcional  
+✔ SSH Git configurado  
 
 ---
 
-## 🛣️ Próximos Passos
+## 📝 Próximos Passos
 
-- ⏳ Testes automatizados (Jest)
-- ⏳ Docker / Docker Compose
-- ⏳ CI/CD
-- ⏳ Integração com frontend
+- Testes automatizados (Jest)
+- Docker / Docker Compose
+- CI/CD
+- Integração frontend
 
 ---
 
-**Feito em Sorocaba-SP, Brasil — 2026**
+**Feito no Brasil – 2026**
