@@ -6,25 +6,24 @@ API backend **enterprise-grade** focada em autenticação, segurança e rastreab
 
 ## ✨ Visão Geral
 
-* Autenticação segura com **tokens HMAC-SHA512 + SHA256**
-* **Senhas fortes obrigatórias** (bcrypt salt 12)
-* **Rate limit por IP** (5 tentativas / 15 min)
-* Recuperação de senha com **token temporário**
-* Histórico de login e IP
-* Emails automáticos (Mailtrap)
-* Arquitetura organizada e pronta para produção
+- Autenticação por **token proprietário** (HMAC-SHA512 + SHA256)
+- **Senhas fortes obrigatórias** (bcrypt salt 12)
+- **Rate limit por IP** (5 tentativas / 15 min)
+- Recuperação de senha com **token temporário**
+- Histórico de login e IP
+- Emails automáticos (Mailtrap)
+- Arquitetura organizada e pronta para produção
 
 ---
 
 ## 🔌 Tech Stack
 
-* Node.js + Express
-* MySQL 8.x
-* bcrypt
-* crypto / crypto-js
-* nodemailer (Mailtrap)
-* dotenv
-* Swagger (opcional)
+- Node.js + Express
+- MySQL 8.x
+- bcrypt
+- crypto / crypto-js
+- nodemailer (Mailtrap)
+- dotenv
 
 ---
 
@@ -36,7 +35,7 @@ cd api_backend
 npm install
 ```
 
-### Configurar ambiente
+### Configuração do ambiente
 
 Crie um `.env` baseado no `.env.example`.
 
@@ -56,16 +55,13 @@ NODE_ENV=production
 
 ## 🟢 Health Check
 
-| Método | Rota               | Descrição                     |
-| ------ | ------------------ | ----------------------------- |
-| GET    | `/api/public/ping` | Verifica se a API está online |
+### GET `/api/public/ping`
 
 **Response**
-
 ```json
 {
   "message": "API Pública OK",
-  "timestamp": "2026-02-02T18:20:30.000Z",
+  "timestamp": "2026-02-02T17:00:00.000Z",
   "version": "1.0.0"
 }
 ```
@@ -75,13 +71,9 @@ NODE_ENV=production
 ## 🔓 Rotas Públicas (`/api/public`)
 
 ### 🔑 Login
-
-| Método | Rota     |
-| ------ | -------- |
-| POST   | `/login` |
+**POST** `/login`
 
 **Request**
-
 ```json
 {
   "email": "user@email.com",
@@ -90,60 +82,43 @@ NODE_ENV=production
 ```
 
 **Response**
-
 ```json
 {
   "success": true,
-  "uid": "user_1700000000_x9as12",
-  "token": "TOKEN_GERADO",
+  "uid": "user_1700000000_abcd123",
+  "token": "9f2c1e7b5a...",
   "message": "Login realizado com sucesso"
 }
 ```
 
-Rate limit: **5 tentativas / 15 min**
-
 ---
 
 ### ➕ Registro
-
-| Método | Rota        |
-| ------ | ----------- |
-| POST   | `/register` |
+**POST** `/register`
 
 **Request**
-
 ```json
 {
-  "email": "novo@email.com",
-  "password": "MeuApp2026!23"
+  "email": "user@email.com",
+  "password": "SenhaMuitoForte@2026"
 }
 ```
 
 **Response**
-
 ```json
 {
   "success": true,
-  "uid": "user_1700001111_abcd99",
+  "uid": "user_1700000000_abcd123",
   "message": "Conta criada com sucesso! Verifique seu email."
 }
 ```
 
-Senha obrigatoriamente forte:
-
-* 12+ caracteres
-* Maiúscula, minúscula, número e símbolo
-
 ---
 
-### 📧 Recuperação de senha
-
-| Método | Rota        |
-| ------ | ----------- |
-| POST   | `/recovery` |
+### 📧 Recuperação de Senha
+**POST** `/recovery`
 
 **Request**
-
 ```json
 {
   "email": "user@email.com"
@@ -151,7 +126,6 @@ Senha obrigatoriamente forte:
 ```
 
 **Response**
-
 ```json
 {
   "success": true,
@@ -159,26 +133,19 @@ Senha obrigatoriamente forte:
 }
 ```
 
-Token válido por **1 hora**.
-
 ---
 
-### 🔄 Reset de senha
-
-| Método | Rota                     |
-| ------ | ------------------------ |
-| POST   | `/reset-password/:token` |
+### 🔄 Reset de Senha
+**POST** `/reset-password/:token`
 
 **Request**
-
 ```json
 {
-  "password": "NovaSenha@2026"
+  "password": "NovaSenhaForte@2026"
 }
 ```
 
 **Response**
-
 ```json
 {
   "success": true,
@@ -186,56 +153,61 @@ Token válido por **1 hora**.
 }
 ```
 
-Senha forte obrigatória.
+---
+
+## 🔒 Autenticação das Rotas Protegidas (`/api/user`)
+
+### Headers obrigatórios
+
+```
+X-UID: user_1700000000_abcd123
+X-TOKEN: TOKEN_GERADO_NO_LOGIN
+```
+
+### Funcionamento do middleware
+
+1. Valida presença dos headers
+2. Valida token (`verificarToken(uid, token)`)
+3. Confirma usuário no banco
+4. Injeta `req.user`
+
+```js
+req.user = {
+  uid,
+  email,
+  role
+}
+```
 
 ---
 
-## 🔒 Rotas Protegidas (`/api/user`)
+## 🔐 Rotas Protegidas
 
-🔐 **Autenticação obrigatória via middleware**
-
-**Headers esperados**
-
-```
-Authorization: Bearer TOKEN
-```
-
----
-
-### 👤 Perfil do usuário
-
-| Método | Rota  |
-| ------ | ----- |
-| GET    | `/me` |
+### 👤 Meu Perfil
+**GET** `/me`
 
 **Response**
-
 ```json
 {
   "success": true,
   "user": {
-    "uid": "user_1700000000_x9as12",
+    "uid": "user_1700000000_abcd123",
     "email": "user@email.com",
     "role": "user",
     "is_admin": false,
     "last_ip": "192.168.0.10",
-    "last_login": "02/02/2026 18:30",
-    "login_attempts": 0,
-    "created_at": "2026-01-15T12:00:00.000Z"
+    "last_login": "02/02/2026 14:33",
+    "login_attempts": 0
   }
 }
 ```
 
 ---
 
-### ✏️ Atualizar perfil
-
-| Método | Rota       |
-| ------ | ---------- |
-| PUT    | `/profile` |
+### ✏️ Atualizar Perfil
+**PUT** `/profile`
 
 **Request**
-
 ```json
 {
   "email": "novo@email.com"
@@ -244,37 +216,29 @@ Authorization: Bearer TOKEN
 
 ---
 
-### 🔐 Alterar senha
-
-| Método | Rota               |
-| ------ | ------------------ |
-| POST   | `/change-password` |
+### 🔐 Alterar Senha
+**POST** `/change-password`
 
 **Request**
-
 ```json
 {
-  "currentPassword": "SenhaAntiga@2025",
-  "newPassword": "SenhaNova@2026"
+  "currentPassword": "SenhaAtual@2025",
+  "newPassword": "SenhaNovaMuitoForte@2026"
 }
 ```
 
 ---
 
-### 📋 Histórico de login
-
-| Método | Rota             |
-| ------ | ---------------- |
-| GET    | `/login-history` |
+### 📋 Histórico de Login
+**GET** `/login-history`
 
 **Response**
-
 ```json
 {
   "success": true,
   "history": {
     "last_ip": "192.168.0.10",
-    "formatted_login": "02/02/2026 18:30",
+    "formatted_login": "02/02/2026 14:33",
     "login_attempts": 0,
     "formatted_failed": "N/A"
   }
@@ -283,26 +247,34 @@ Authorization: Bearer TOKEN
 
 ---
 
-## 🔒 Segurança Implementada
+## 🔄 Fluxos da API
 
-| Item          | Implementação          |
-| ------------- | ---------------------- |
-| Hash senha    | bcrypt (salt 12)       |
-| Token         | HMAC-SHA512 + SHA256   |
-| Rate limit    | IP + ação              |
-| SQL Injection | Queries preparadas     |
-| Reset senha   | Token temporário (1h)  |
-| Auditoria     | IP e login armazenados |
+### 🔐 Fluxo de Autenticação
+
+1. Usuário faz login
+2. API valida credenciais
+3. Retorna `uid` + `token`
+4. Frontend salva token
+5. Envia headers em rotas protegidas
 
 ---
 
-## 📧 Emails Automáticos
+### 🔁 Fluxo de Recuperação de Senha
 
-* Boas-vindas
-* Login recente
-* Recuperação de senha
-* Alteração de email
-* Troca de senha
+1. Usuário solicita recovery
+2. Token temporário (1h) é gerado
+3. Email enviado
+4. Usuário redefine senha
+5. Token é invalidado
+
+---
+
+### 🔒 Fluxo de Segurança
+
+- Senhas sempre com bcrypt
+- Token validado em todas as rotas privadas
+- IP e login armazenados
+- Rate limit por IP
 
 ---
 
@@ -331,19 +303,10 @@ api_backend/
 
 ## 📈 Status
 
-✔ Produção pronta
-✔ Segurança aplicada
-✔ API funcional
-✔ SSH Git configurado
-
----
-
-## 📝 Próximos Passos
-
-* Testes automatizados (Jest)
-* Docker / Docker Compose
-* CI/CD
-* Integração frontend
+✔ Produção pronta  
+✔ Segurança aplicada  
+✔ Fluxos documentados  
+✔ API funcional  
 
 ---
 
